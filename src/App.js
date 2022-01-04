@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./styles.css";
 
 function BotaoOrdemHistorico(props) {
@@ -68,47 +68,45 @@ function Historico(props) {
 	);
 }
 
-class Board extends React.Component {
-	renderSquare(i) {
+function Board(props) {
+	function renderSquare(i) {
 		return (
 			<Square
 				key={i}
-				value={this.props.squares[i]}
-				//vencedorPosicoes={this.props.posicoesVencedor}
-				onClick={() => this.props.onClick(i)}
+				value={props.squares[i]}
+				//vencedorPosicoes={props.posicoesVencedor}
+				onClick={() => props.onClick(i)}
 			/>
 		);
 	}
 
-	render() {
-		let tabuleiro_array = [];
-		let tabuleiro_linha = 0;
+	let tabuleiro_array = [];
+	let tabuleiro_linha = 0;
 
-		for (let i = 0; i < this.props.squares.length; i++) {
-			if (i === 0) {
-				tabuleiro_array[tabuleiro_linha] = new Array();
-			}
-
-			if (i > 0 && i % 3 === 0) {
-				tabuleiro_linha++;
-				tabuleiro_array[tabuleiro_linha] = new Array();
-			}
-
-			tabuleiro_array[tabuleiro_linha].push(i);
+	for (let i = 0; i < props.squares.length; i++) {
+		if (i === 0) {
+			tabuleiro_array[tabuleiro_linha] = new Array();
 		}
 
-		return (
-			<div>
-				{tabuleiro_array.map((valorLinha, indexLinha) => (
-					<div key={indexLinha} className="board-row">
-						{tabuleiro_array[indexLinha].map((valorColuna, indexColuna) =>
-							this.renderSquare(valorColuna)
-						)}
-					</div>
-				))}
-			</div>
-		);
+		if (i > 0 && i % 3 === 0) {
+			tabuleiro_linha++;
+			tabuleiro_array[tabuleiro_linha] = new Array();
+		}
+
+		tabuleiro_array[tabuleiro_linha].push(i);
 	}
+
+	return (
+		<div>
+			{tabuleiro_array.map((valorLinha, indexLinha) => (
+				<div key={indexLinha} className="board-row">
+					{tabuleiro_array[indexLinha].map((valorColuna, indexColuna) =>
+						renderSquare(valorColuna)
+					)}
+				</div>
+			))}
+		</div>
+	);
 }
 
 export class Game extends React.Component {
@@ -216,7 +214,7 @@ export class Game extends React.Component {
 				<div className="game-board">
 					<Board
 						squares={current.squares}
-						vencedorPosicoes={posicoesVencedor}
+						//vencedorPosicoes={posicoesVencedor}
 						onClick={(i) => this.handleClick(i)}
 					/>
 				</div>
