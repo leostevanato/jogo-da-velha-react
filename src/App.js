@@ -37,7 +37,7 @@ function Historico(props) {
 	}
 
 	return (
-		<ol>
+		<ol reversed={reverter ? true : null}>
 			{historico.map((step, index) => {
 				let movimento = index;
 
@@ -68,7 +68,7 @@ function Historico(props) {
 	);
 }
 
-function Board(props) {
+const Board = (props) => {
 	function renderSquare(i) {
 		return (
 			<Square
@@ -107,7 +107,7 @@ function Board(props) {
 			))}
 		</div>
 	);
-}
+};
 
 export class Game extends React.Component {
 	constructor(props) {
