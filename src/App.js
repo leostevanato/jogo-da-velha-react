@@ -1,8 +1,34 @@
 import React, { useState } from "react";
 import "./styles.css";
 
+function calculateWinner(quadrados) {
+	const lines = [
+		[0, 1, 2],
+		[3, 4, 5],
+		[6, 7, 8],
+		[0, 3, 6],
+		[1, 4, 7],
+		[2, 5, 8],
+		[0, 4, 8],
+		[2, 4, 6]
+	];
+
+	for (let i = 0; i < lines.length; i++) {
+		const [a, b, c] = lines[i];
+		if (
+			quadrados[a] &&
+			quadrados[a] === quadrados[b] &&
+			quadrados[a] === quadrados[c]
+		) {
+			return { vencedor: quadrados[a], vencedorPosicoes: [a, b, c] };
+		}
+	}
+
+	return null;
+}
+
 function BotaoOrdemHistorico(props) {
-	const classe = props.value == props.ordemAtual ? "botao-ativo" : null;
+	const classe = props.value === props.ordemAtual ? "botao-ativo" : null;
 
 	return (
 		<button className={classe} onClick={props.onClick}>
@@ -23,17 +49,17 @@ function Square(props) {
 }
 
 function Historico(props) {
-	const history = props.history;
-	const stepClicado = props.stepClicado;
+	const pHistory = props.history;
+	const pStepClicado = props.stepClicado;
 	let historico;
 	let reverter = props.reverso;
 
 	if (reverter) {
-		const historico_reverso = [...history];
+		const historico_reverso = [...pHistory];
 		historico_reverso.reverse();
 		historico = [...historico_reverso];
 	} else {
-		historico = [...history];
+		historico = [...pHistory];
 	}
 
 	return (
@@ -45,9 +71,9 @@ function Historico(props) {
 					movimento = step.movimento;
 				}
 
-				const classe = stepClicado == movimento ? "botao-ativo" : null;
+				const classe = pStepClicado === movimento ? "botao-ativo" : null;
 				const desc = movimento
-					? (stepClicado == movimento ? "Move atual #" : "Go to move #") +
+					? (pStepClicado === movimento ? "Move atual #" : "Go to move #") +
 					  movimento +
 					  " (" +
 					  step.linha +
@@ -85,12 +111,12 @@ const Board = (props) => {
 
 	for (let i = 0; i < props.squares.length; i++) {
 		if (i === 0) {
-			tabuleiro_array[tabuleiro_linha] = new Array();
+			tabuleiro_array[tabuleiro_linha] = [];
 		}
 
 		if (i > 0 && i % 3 === 0) {
 			tabuleiro_linha++;
-			tabuleiro_array[tabuleiro_linha] = new Array();
+			tabuleiro_array[tabuleiro_linha] = [];
 		}
 
 		tabuleiro_array[tabuleiro_linha].push(i);
@@ -109,158 +135,117 @@ const Board = (props) => {
 	);
 };
 
-export class Game extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			history: [
-				{
-					squares: Array(9).fill(null),
-					movimento: 0,
-					linha: null,
-					coluna: null
-				}
-			],
-			stepNumber: 0,
-			xIsNext: true,
-			ordemHistorico: "ASC"
-		};
-	}
+export const Game = (props) => {
+	const [history, setHistory] = useState([
+		{
+			squares: Array(9).fill(null),
+			movimento: 0,
+			linha: null,
+			coluna: null
+		}
+	]);
 
-	handleClick(i) {
-		const history = this.state.history.slice(0, this.state.stepNumber + 1);
-		const current = history[history.length - 1];
-		const squares = current.squares.slice();
+	const [stepNumber, setStepNumber] = useState(0);
+	const [xIsNext, setXIsNext] = useState(true);
+	const [ordemHistorico, setOrdemHistorico] = useState("ASC");
 
-		//console.log("C: "+ JSON.stringify(current));
+	const handleClick = (i) => {
+		const historico = history.slice(0, stepNumber + 1);
+		const current = historico[historico.length - 1];
+		const quadrados = current.squares.slice();
 
-		if (calculateWinner(squares) || squares[i]) {
+		if (calculateWinner(quadrados) || quadrados[i]) {
 			return;
 		}
 
-		squares[i] = this.state.xIsNext ? "X" : "O";
+		quadrados[i] = xIsNext ? "X" : "O";
 
-		this.setState({
-			history: history.concat([
-				{
-					squares: squares,
-					//ordem: ordem,
-					movimento: history.length,
-					linha: parseInt(i / 3) + 1,
-					coluna: (i % 3) + 1
-				}
-			]),
-			stepNumber: history.length,
-			xIsNext: !this.state.xIsNext
-		});
-	}
+		setHistory([
+			...historico,
+			{
+				squares: quadrados,
+				movimento: historico.length,
+				linha: Math.trunc(i / 3) + 1,
+				coluna: (i % 3) + 1
+			}
+		]);
 
-	jumpTo = (step) => {
-		this.setState({
-			stepNumber: step,
-			xIsNext: step % 2 === 0
-		});
+		setStepNumber(historico.length);
+		setXIsNext(!xIsNext);
 	};
 
-	renderHistorico(history, reverso = false) {
+	const jumpTo = (step) => {
+		setStepNumber(step);
+		setXIsNext(step % 2 === 0);
+	};
+
+	const renderHistorico = () => {
 		return (
 			<Historico
 				history={history}
-				reverso={reverso}
-				onClick={this.jumpTo}
-				stepClicado={this.state.stepNumber}
+				reverso={reverterHistorico}
+				onClick={jumpTo}
+				stepClicado={stepNumber}
 			/>
 		);
-	}
+	};
 
-	handleClickOrdemHistorico(ordem = "ASC") {
-		this.setState({ ordemHistorico: ordem });
-	}
+	const handleClickOrdemHistorico = (ordem = "ASC") => {
+		setOrdemHistorico(ordem);
+	};
 
-	renderBotaoOrdemHistorico(ordem = "ASC") {
+	const renderBotaoOrdemHistorico = (ordem = "ASC") => {
 		const chave = "boh" + ordem.toLowerCase();
 
 		return (
 			<BotaoOrdemHistorico
 				key={chave}
 				value={ordem}
-				onClick={() => this.handleClickOrdemHistorico(ordem)}
+				onClick={() => handleClickOrdemHistorico(ordem)}
 			/>
 		);
+	};
+
+	const current = history[stepNumber];
+	const winner = calculateWinner(current.squares);
+	let posicoesVencedor = null;
+
+	let status;
+	if (winner) {
+		posicoesVencedor = winner.vencedorPosicoes;
+		status = "Winner: " + winner.vencedor;
+	} else {
+		status = "Next player: " + (xIsNext ? "X" : "O");
 	}
 
-	render() {
-		const history = this.state.history;
-		const current = history[this.state.stepNumber];
-		const winner = calculateWinner(current.squares);
-		let posicoesVencedor = null;
-		//console.log(this.state.stepNumber);
-		//console.log(this.state);
-		//console.log(winner);
+	const reverterHistorico = ordemHistorico === "ASC" ? false : true;
 
-		let status;
-		if (winner) {
-			posicoesVencedor = winner.vencedorPosicoes;
-			status = "Winner: " + winner.vencedor;
-		} else {
-			status = "Next player: " + (this.state.xIsNext ? "X" : "O");
-		}
-
-		const reverterHistorico =
-			this.state.ordemHistorico === "ASC" ? false : true;
-
-		return (
-			<div className="game">
-				<div className="game-board">
-					<Board
-						squares={current.squares}
-						//vencedorPosicoes={posicoesVencedor}
-						onClick={(i) => this.handleClick(i)}
-					/>
-				</div>
-				<div className="game-info">
-					<div>{status}</div>
-					<BotaoOrdemHistorico
-						key={"bohasc"}
-						value="ASC"
-						onClick={() => this.handleClickOrdemHistorico("ASC")}
-						ordemAtual={this.state.ordemHistorico}
-					/>
-					<BotaoOrdemHistorico
-						key={"bohdesc"}
-						value="DESC"
-						onClick={() => this.handleClickOrdemHistorico("DESC")}
-						ordemAtual={this.state.ordemHistorico}
-					/>
-
-					{this.renderHistorico(history, reverterHistorico)}
-				</div>
+	return (
+		<div className="game">
+			<div className="game-board">
+				<Board
+					squares={current.squares}
+					//vencedorPosicoes={posicoesVencedor}
+					onClick={(i) => handleClick(i)}
+				/>
 			</div>
-		);
-	}
-}
+			<div className="game-info">
+				<div>{status}</div>
+				<BotaoOrdemHistorico
+					key={"bohasc"}
+					value="ASC"
+					onClick={() => handleClickOrdemHistorico("ASC")}
+					ordemAtual={ordemHistorico}
+				/>
+				<BotaoOrdemHistorico
+					key={"bohdesc"}
+					value="DESC"
+					onClick={() => handleClickOrdemHistorico("DESC")}
+					ordemAtual={ordemHistorico}
+				/>
 
-// ========================================
-
-function calculateWinner(squares) {
-	const lines = [
-		[0, 1, 2],
-		[3, 4, 5],
-		[6, 7, 8],
-		[0, 3, 6],
-		[1, 4, 7],
-		[2, 5, 8],
-		[0, 4, 8],
-		[2, 4, 6]
-	];
-
-	for (let i = 0; i < lines.length; i++) {
-		const [a, b, c] = lines[i];
-		if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-			//console.log(a, b, c);
-
-			return { vencedor: squares[a], vencedorPosicoes: [a, b, c] };
-		}
-	}
-	return null;
-}
+				{renderHistorico()}
+			</div>
+		</div>
+	);
+};
