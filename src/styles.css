@@ -68,3 +68,7 @@ ul {
 	font-weight: bold;
 	pointer-events: none;
 }
+
+.square-vencedor {
+	color: #0000ff;
+}

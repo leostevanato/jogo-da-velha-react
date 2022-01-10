@@ -38,11 +38,12 @@ function BotaoOrdemHistorico(props) {
 }
 
 function Square(props) {
-	//const classeVencedor = props.vencedorPosicoes.includes(props.value)? " posicao-vencedor" : null;
+	const classeVencedor = props.vencedor.vencedorPosicoes.includes(props.posicao)
+		? "square-vencedor"
+		: "";
 
 	return (
-		//<button className={`square${classeVencedor}`} onClick={props.onClick}>
-		<button className="square" onClick={props.onClick}>
+		<button className={`square ${classeVencedor}`} onClick={props.onClick}>
 			{props.value}
 		</button>
 	);
@@ -100,7 +101,8 @@ const Board = (props) => {
 			<Square
 				key={i}
 				value={props.squares[i]}
-				//vencedorPosicoes={props.posicoesVencedor}
+				posicao={i}
+				vencedor={props.vencedor}
 				onClick={() => props.onClick(i)}
 			/>
 		);
@@ -136,6 +138,11 @@ const Board = (props) => {
 };
 
 export const Game = (props) => {
+	const vencedorInicial = {
+		vencedor: "",
+		vencedorPosicoes: []
+	};
+
 	const [history, setHistory] = useState([
 		{
 			squares: Array(9).fill(null),
@@ -148,6 +155,7 @@ export const Game = (props) => {
 	const [stepNumber, setStepNumber] = useState(0);
 	const [xIsNext, setXIsNext] = useState(true);
 	const [ordemHistorico, setOrdemHistorico] = useState("ASC");
+	const [vencedor, setVencedor] = useState(vencedorInicial);
 
 	const handleClick = (i) => {
 		const historico = history.slice(0, stepNumber + 1);
@@ -202,20 +210,31 @@ export const Game = (props) => {
 				key={chave}
 				value={ordem}
 				onClick={() => handleClickOrdemHistorico(ordem)}
+				ordemAtual={ordemHistorico}
 			/>
 		);
 	};
 
 	const current = history[stepNumber];
 	const winner = calculateWinner(current.squares);
-	let posicoesVencedor = null;
-
 	let status;
+
 	if (winner) {
-		posicoesVencedor = winner.vencedorPosicoes;
-		status = "Winner: " + winner.vencedor;
+		if (vencedor.vencedor) {
+			status = "Winner: " + vencedor.vencedor;
+		} else {
+			setVencedor(winner);
+		}
 	} else {
-		status = "Next player: " + (xIsNext ? "X" : "O");
+		if (vencedor.vencedor) {
+			setVencedor(vencedorInicial);
+		}
+
+		if (stepNumber < 9) {
+			status = "Next player: " + (xIsNext ? "X" : "O");
+		} else {
+			status = "Empate";
+		}
 	}
 
 	const reverterHistorico = ordemHistorico === "ASC" ? false : true;
@@ -225,24 +244,14 @@ export const Game = (props) => {
 			<div className="game-board">
 				<Board
 					squares={current.squares}
-					//vencedorPosicoes={posicoesVencedor}
+					vencedor={vencedor}
 					onClick={(i) => handleClick(i)}
 				/>
 			</div>
 			<div className="game-info">
 				<div>{status}</div>
-				<BotaoOrdemHistorico
-					key={"bohasc"}
-					value="ASC"
-					onClick={() => handleClickOrdemHistorico("ASC")}
-					ordemAtual={ordemHistorico}
-				/>
-				<BotaoOrdemHistorico
-					key={"bohdesc"}
-					value="DESC"
-					onClick={() => handleClickOrdemHistorico("DESC")}
-					ordemAtual={ordemHistorico}
-				/>
+				{renderBotaoOrdemHistorico("ASC")}
+				{renderBotaoOrdemHistorico("DESC")}
 
 				{renderHistorico()}
 			</div>
